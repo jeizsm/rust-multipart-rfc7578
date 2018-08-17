@@ -1,4 +1,5 @@
 // Copyright 2017 rust-hyper-multipart-rfc7578 Developers
+// Copyright 2018 rust-multipart-rfc7578 Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
@@ -7,68 +8,43 @@
 //
 
 //! This crate contains an implementation of the multipart/form-data media
-//! type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for
-//! hyper.
-//!
-//! Currently, only the client-side is implemented.
+//! type described in [RFC 7578](https://tools.ietf.org/html/rfc7578).
 //!
 //! ## Usage
 //!
 //! ```toml
 //! [dependencies]
-//! hyper-multipart-rfc7578 = "0.2.0-alpha2"
+//! multipart-rfc7578 = "0.3.0"
 //! ```
 //!
 //! Because the name of this library is really wordy, I recommend shortening it:
 //!
 //! ```rust
-//! extern crate hyper_multipart_rfc7578 as hyper_multipart;
+//! extern crate multipart_rfc7578 as multipart;
 //! ```
 //!
-//! Using this requires a hyper client compatible with the `multipart::Body`
-//! data structure (see the documentation for more detailed examples):
-//!
 //! ```rust
-//! # extern crate hyper;
-//! # extern crate hyper_multipart_rfc7578;
+//! # extern crate multipart_rfc7578;
 //!
-//! use hyper::{Client, Request, rt::{self, Future}};
-//! use hyper_multipart_rfc7578::client::{self, multipart};
+//! use multipart_rfc7578::MultipartForm;
 //!
 //! # fn main() {
-//! let client = Client::new();
-//! let mut req_builder = Request::get("http://localhost/upload");
-//! let mut form = multipart::Form::default();
+//! let mut form = MultipartForm::default();
 //!
 //! form.add_text("test", "Hello World");
-//! let req = form.set_body(&mut req_builder).unwrap();
-//!
-//! rt::run(
-//!     client
-//!         .request(req)
-//!         .map(|_| println!("done..."))
-//!         .map_err(|_| println!("an error occurred")),
-//! );
 //! # }
 //! ```
 //!
-extern crate bytes;
-extern crate futures;
 extern crate http;
-extern crate hyper;
 extern crate mime;
 extern crate rand;
 
-mod client_;
-mod error;
+pub mod boundary_generator;
+mod chain;
+pub mod multipart;
+mod part;
 
-pub mod client {
-    pub use error::Error;
+pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
+pub use multipart::MultipartForm;
 
-    /// This module contains data structures for building a multipart/form
-    /// body to send a server.
-    ///
-    pub mod multipart {
-        pub use client_::{Body, BoundaryGenerator, Form, Part};
-    }
-}
+pub(crate) const CRLF: &str = "\r\n";
