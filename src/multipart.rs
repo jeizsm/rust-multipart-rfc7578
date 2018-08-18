@@ -21,6 +21,17 @@ use std::{
 };
 use CRLF;
 
+#[cfg(feature = "hyper")]
+use body::Body;
+#[cfg(feature = "hyper")]
+use http::{
+    self,
+    header::CONTENT_TYPE,
+    request::{Builder, Request},
+};
+#[cfg(feature = "hyper")]
+use hyper;
+
 // use error::Error;
 
 /// Implements the multipart/form-data media type as described by
@@ -307,12 +318,44 @@ impl MultipartForm {
         let chain = ReadersChain::new(readers);
         boundary.chain(chain).chain(final_boundary)
     }
+
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hyper;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// use hyper::{Method, Request, Uri};
+    /// use multipart_rfc7578::MultipartForm;
+    ///
+    /// # fn main() {
+    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
+    /// let mut req_builder = Request::post(url);
+    /// let mut form = MultipartForm::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// # }
+    /// ```
+    ///
+    #[cfg(feature = "hyper")]
+    pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
+        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
+
+        let header: &str = header.as_ref();
+
+        req.header(CONTENT_TYPE, header);
+
+        req.body(hyper::Body::wrap_stream(Body::from(self)))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::MultipartForm;
-    use boundary_generator::BoundaryGenerator;
     use std::io::{Cursor, Read};
     #[test]
     fn test_text_form() {

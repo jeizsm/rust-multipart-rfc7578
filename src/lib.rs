@@ -35,10 +35,18 @@
 //! # }
 //! ```
 //!
+#[cfg(feature = "bytes")]
+extern crate bytes;
+#[cfg(feature = "futures")]
+extern crate futures;
 extern crate http;
+#[cfg(feature = "hyper")]
+extern crate hyper;
 extern crate mime;
 extern crate rand;
 
+#[cfg(feature = "futures")]
+mod body;
 pub mod boundary_generator;
 mod chain;
 pub mod multipart;
