@@ -7,6 +7,8 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+#[cfg(feature = "actix-web")]
+use actix_web::{self, client::{ClientRequestBuilder, ClientRequest}};
 use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
 use chain::ReadersChain;
 use mime::Mime;
@@ -21,9 +23,10 @@ use std::{
 };
 use CRLF;
 
-#[cfg(feature = "hyper")]
+#[cfg(any(feature = "hyper", feature = "actix-web"))]
 use body::Body;
-#[cfg(feature = "hyper")]
+#[cfg(any(feature = "hyper", feature = "actix-web"))]
+#[allow(unused_imports)]
 use http::{
     self,
     header::CONTENT_TYPE,
@@ -319,6 +322,7 @@ impl MultipartForm {
         boundary.chain(chain).chain(final_boundary)
     }
 
+    #[cfg(feature = "hyper")]
     /// Updates a request instance with the multipart Content-Type header
     /// and the payload data.
     ///
@@ -337,12 +341,11 @@ impl MultipartForm {
     /// let mut form = MultipartForm::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// let req = form.set_hyper_body(&mut req_builder).unwrap();
     /// # }
     /// ```
     ///
-    #[cfg(feature = "hyper")]
-    pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
+    pub fn set_hyper_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 
         let header: &str = header.as_ref();
@@ -350,6 +353,35 @@ impl MultipartForm {
         req.header(CONTENT_TYPE, header);
 
         req.body(hyper::Body::wrap_stream(Body::from(self)))
+    }
+
+    #[cfg(feature = "actix-web")]
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate actix_web;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// use actix_web::client;
+    /// use multipart_rfc7578::MultipartForm;
+    ///
+    /// # fn main() {
+    /// let url = "http://localhost:80/upload";
+    /// let mut req_builder = client::post(url);
+    /// let mut form = MultipartForm::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_actix_body(&mut req_builder).unwrap();
+    /// # }
+    /// ```
+    ///
+    pub fn set_actix_body(self, req: &mut ClientRequestBuilder) -> Result<ClientRequest, actix_web::Error> {
+        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
+        req.header(CONTENT_TYPE, header);
+        req.streaming(Body::from(self))
     }
 }
 

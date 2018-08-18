@@ -17,8 +17,10 @@ http = "0.1"
 hyper = { version = "0.12", optional = true }
 bytes = { version = "0.4", optional = true }
 futures = { version = "0.1", optional = true }
+actix-web = { version = "0.7", optional = true }
 
 [features]
 
 default = ["bytes", "futures"]
 with-hyper = ["hyper", "bytes", "futures"]
+with-actix-web = ["actix-web", "bytes", "futures"]

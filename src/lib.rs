@@ -35,6 +35,8 @@
 //! # }
 //! ```
 //!
+#[cfg(feature = "actix-web")]
+extern crate actix_web;
 #[cfg(feature = "bytes")]
 extern crate bytes;
 #[cfg(feature = "futures")]
