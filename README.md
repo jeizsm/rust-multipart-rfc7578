@@ -1,6 +1,6 @@
 ## Rust Hyper Multipart (RFC 7578)
 
-[![Travis](https://img.shields.io/travis/ferristseng/rust-hyper-multipart-rfc7578.svg)](https://travis-ci.org/ferristseng/rust-hyper-multipart-rfc7578)
+[![Travis](https://img.shields.io/travis/jeizsm/hyper-multipart-rfc7578.svg)](https://travis-ci.org/jeizsm/hyper-multipart-rfc7578)
 [![Crates.io](https://img.shields.io/crates/v/hyper-multipart-rfc7578.svg)](https://crates.io/crates/hyper-multipart-rfc7578)
 [![Docs.rs](https://docs.rs/hyper-multipart-rfc7578/badge.svg)](https://docs.rs/hyper-multipart-rfc7578/)
 
@@ -14,14 +14,10 @@ Currently, only the client-side is implemented.
 
 ```toml
 [dependencies]
-hyper-multipart-rfc7578 = "0.2.0-alpha2"
+multipart-rfc7578 = "0.3"
 ```
 
 Because the name of this library is really wordy, I recommend shortening it:
-
-```rust
-extern crate hyper_multipart_rfc7578 as hyper_multipart;
-```
 
 Using this requires a hyper client compatible with the `multipart::Body`
 data structure (see the documentation for more detailed examples):
@@ -29,11 +25,11 @@ data structure (see the documentation for more detailed examples):
 ```rust
 
 use hyper::{Client, Request, rt::{self, Future}};
-use hyper_multipart_rfc7578::client::{self, multipart};
+use multipart_rfc7578::MultipartForm;
 
 let client = Client::new();
 let mut req_builder = Request::get("http://localhost/upload");
-let mut form = multipart::Form::default();
+let mut form = MultipartForm::default();
 
 form.add_text("test", "Hello World");
 let req = form.set_body(&mut req_builder).unwrap();

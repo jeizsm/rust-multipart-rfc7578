@@ -1,12 +1,12 @@
 [package]
 name              = "multipart-rfc7578"
 description       = "An implementation of multipart/form-data (RFC7578)"
-authors           = ["Marat Safin <jeizsm@gmail.com>"]
+authors           = ["Marat Safin <jeizsm@gmail.com>", "Ferris Tseng <ferristseng@fastmail.fm>"]
 documentation     = "https://docs.rs/multipart-rfc7578"
 repository        = "https://github.com/jeizsm/rust-multipart-rfc7578"
-keywords          = ["multipart", "form"]
-categories        = ["web-programming"]
-version           = "0.3.0"
+keywords          = ["hyper", "actix-web", "multipart", "form", "http"]
+categories        = ["asynchronous", "web-programming"]
+version           = "0.3.1"
 readme            = "README.md"
 license           = "MIT OR Apache-2.0"
 
