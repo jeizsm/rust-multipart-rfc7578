@@ -32,7 +32,7 @@ use body::Body;
 #[allow(unused_imports)]
 use http::{
     self,
-    header::CONTENT_TYPE,
+    header::{CONTENT_LENGTH, CONTENT_TYPE},
     request::{Builder, Request},
 };
 #[cfg(feature = "hyper")]
@@ -293,12 +293,10 @@ impl Form {
         let f = File::open(&path)?;
         let mime = match mime {
             Some(mime) => Some(mime),
-            None => {
-                match path.as_ref().extension() {
-                    Some(ext) => Mime::from_str(ext.to_string_lossy().borrow()).ok(),
-                    None => None
-                }
-            }
+            None => match path.as_ref().extension() {
+                Some(ext) => Mime::from_str(ext.to_string_lossy().borrow()).ok(),
+                None => None,
+            },
         };
         let len = match f.metadata() {
             // If the path is not a file, it can't be uploaded because there
@@ -332,15 +330,18 @@ impl Form {
         Ok(())
     }
 
-    // get boundary as header string
-    pub fn boundary_header(&self) -> String {
+    /// get boundary as content type string
+    #[inline]
+    pub fn content_type(&self) -> String {
         format!("multipart/form-data; boundary=\"{}\"", &self.boundary)
     }
 
+    #[inline]
     fn boundary_string(&self) -> String {
         format!("--{}{}", self.boundary, CRLF)
     }
 
+    #[inline]
     fn final_boundary_string(&self) -> String {
         format!("--{}--{}", self.boundary, CRLF)
     }
@@ -354,6 +355,19 @@ impl Form {
             .map(|part| part.into_reader())
             .peekable();
         FormReader::new(boundary, readers, final_boundary)
+    }
+
+    #[inline]
+    fn boundary_len(&self) -> u64 {
+        (self.boundary.len() + 4) as u64
+    }
+
+    /// get content length
+    pub fn content_length(&self) -> Option<u64> {
+        let boundary_len = self.boundary_len() + 2;
+        self.parts.iter().try_fold(boundary_len, |sum, part| {
+            part.content_length().map(|len| sum + len + boundary_len)
+        })
     }
 
     #[cfg(feature = "hyper")]
@@ -380,8 +394,10 @@ impl Form {
     /// ```
     ///
     pub fn set_hyper_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
-        req.header(CONTENT_TYPE, self.boundary_header());
-
+        req.header(CONTENT_TYPE, self.content_type());
+        if let Some(len) = self.content_length() {
+            req.header(CONTENT_LENGTH, len.to_string());
+        }
         req.body(hyper::Body::wrap_stream(Body::from(self)))
     }
 
@@ -412,7 +428,10 @@ impl Form {
         self,
         req: &mut ClientRequestBuilder,
     ) -> Result<ClientRequest, actix_web::Error> {
-        req.header(CONTENT_TYPE, self.boundary_header());
+        req.header(CONTENT_TYPE, self.content_type());
+        if let Some(len) = self.content_length() {
+            req.header(CONTENT_LENGTH, len.to_string());
+        }
         req.streaming(Body::from(self))
     }
 }

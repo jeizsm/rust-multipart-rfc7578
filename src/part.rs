@@ -6,6 +6,7 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 //
+#![cfg_attr(feature = "cargo-clippy", allow(borrow_interior_mutable_const))]
 
 use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use mime::{self, Mime};
@@ -74,6 +75,7 @@ impl Part {
         }
     }
 
+    #[inline]
     fn headers_string(&self) -> String {
         format!(
             "{}: {}{}{}: {}{}{}",
@@ -94,6 +96,23 @@ impl Part {
             Inner::Read(read, _) => read,
         };
         cursor.chain(inner).chain(Cursor::new(CRLF))
+    }
+
+    #[inline]
+    fn content_disposition_len(&self) -> u64 {
+        (CONTENT_DISPOSITION.as_str().len() + 2 + self.content_disposition.len()) as u64
+    }
+
+    #[inline]
+    fn content_type_len(&self) -> u64 {
+        (CONTENT_TYPE.as_str().len() + 2 + self.content_type.len()) as u64
+    }
+
+    #[inline]
+    pub(crate) fn content_length(&self) -> Option<u64> {
+        self.inner
+            .len()
+            .map(|len| len + self.content_disposition_len() + 2 + self.content_type_len() + 4)
     }
 }
 

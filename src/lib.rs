@@ -48,7 +48,7 @@ mod form_reader;
 mod part;
 
 #[cfg(feature = "futures")]
-pub mod body;
+mod body;
 
 pub use body::Body;
 pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
