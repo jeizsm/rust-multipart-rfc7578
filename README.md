@@ -17,9 +17,9 @@ Currently, only the client-side is implemented.
 multipart-rfc7578 = "0.4"
 ```
 
-[use with hyper](https://docs.rs/multipart-rfc7578/0.4.0/multipart_rfc7578/multipart/struct.MultipartForm.html#method.set_hyper_body)
+[use with hyper](https://docs.rs/multipart-rfc7578/0.4/multipart_rfc7578/multipart/struct.Form.html#method.set_hyper_body)
 
-[use with actix](https://docs.rs/multipart-rfc7578/0.4.0/multipart_rfc7578/multipart/struct.MultipartForm.html#method.set_actix_body)
+[use with actix](https://docs.rs/multipart-rfc7578/0.4/multipart_rfc7578/multipart/struct.Form.html#method.set_actix_body)
 
 
 ## Note on Server Implementation
