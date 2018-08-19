@@ -42,7 +42,7 @@ impl Stream for Body {
             let buf = writer.get_mut();
             let num = self.reader.read(&mut buf.bytes_mut())?;
             if num == 0 {
-                return Ok(Async::Ready(None))
+                return Ok(Async::Ready(None));
             } else {
                 buf.advance_mut(num);
             }

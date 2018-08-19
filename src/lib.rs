@@ -35,24 +35,26 @@
 //! # }
 //! ```
 //!
+extern crate http;
+extern crate mime;
+extern crate rand;
+
 #[cfg(feature = "actix-web")]
 extern crate actix_web;
 #[cfg(feature = "bytes")]
 extern crate bytes;
 #[cfg(feature = "futures")]
 extern crate futures;
-extern crate http;
 #[cfg(feature = "hyper")]
 extern crate hyper;
-extern crate mime;
-extern crate rand;
 
-#[cfg(feature = "futures")]
-mod body;
 pub mod boundary_generator;
 mod chain;
 pub mod multipart;
 mod part;
+
+#[cfg(feature = "futures")]
+mod body;
 
 pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
 pub use multipart::MultipartForm;

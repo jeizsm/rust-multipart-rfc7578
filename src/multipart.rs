@@ -7,8 +7,6 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-#[cfg(feature = "actix-web")]
-use actix_web::{self, client::{ClientRequestBuilder, ClientRequest}};
 use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
 use chain::ReadersChain;
 use mime::Mime;
@@ -23,6 +21,11 @@ use std::{
 };
 use CRLF;
 
+#[cfg(feature = "actix-web")]
+use actix_web::{
+    self,
+    client::{ClientRequest, ClientRequestBuilder},
+};
 #[cfg(any(feature = "hyper", feature = "actix-web"))]
 use body::Body;
 #[cfg(any(feature = "hyper", feature = "actix-web"))]
@@ -378,7 +381,10 @@ impl MultipartForm {
     /// # }
     /// ```
     ///
-    pub fn set_actix_body(self, req: &mut ClientRequestBuilder) -> Result<ClientRequest, actix_web::Error> {
+    pub fn set_actix_body(
+        self,
+        req: &mut ClientRequestBuilder,
+    ) -> Result<ClientRequest, actix_web::Error> {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
         req.header(CONTENT_TYPE, header);
         req.streaming(Body::from(self))
