@@ -126,6 +126,45 @@ impl Form {
     /// # Examples
     ///
     /// ```
+    /// # extern crate mime;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// use multipart_rfc7578::Form;
+    /// use std::io::Cursor;
+    ///
+    /// let string = "Hello World!";
+    /// let bytes = Cursor::new(string);
+    /// let mut form = Form::default();
+    ///
+    /// form.add_reader2("input", bytes, Some("filename.png"), Some(mime::TEXT_PLAIN), Some(string.len() as u64));
+    /// ```
+    pub fn add_reader2<F, G, R>(
+        &mut self,
+        name: F,
+        read: R,
+        filename: Option<G>,
+        mime: Option<Mime>,
+        length: Option<u64>,
+    ) where
+        F: Display,
+        G: Into<String>,
+        R: 'static + Read + Send,
+    {
+        let read = Box::new(read);
+
+        self.parts.push(Part::new::<_, String>(
+            Inner::Read(read, length),
+            name,
+            mime,
+            filename.map(Into::into),
+        ));
+    }
+
+    /// Adds a readable part to the Form.
+    ///
+    /// # Examples
+    ///
+    /// ```
     /// use multipart_rfc7578::Form;
     /// use std::io::Cursor;
     ///
@@ -134,41 +173,13 @@ impl Form {
     ///
     /// form.add_reader("input", bytes);
     /// ```
-    ///
+    #[inline]
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
         R: 'static + Read + Send,
     {
-        let read = Box::new(read);
-
-        self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
-            name,
-            None,
-            None,
-        ));
-    }
-
-    /// Adds a file, and attempts to derive the mime type.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use multipart_rfc7578::Form;
-    ///
-    /// let mut form = Form::default();
-    ///
-    /// form.add_file("file", file!()).expect("file to exist");
-    /// ```
-    ///
-    #[inline]
-    pub fn add_file<P, F>(&mut self, name: F, path: P) -> io::Result<()>
-    where
-        P: AsRef<Path>,
-        F: Display,
-    {
-        self._add_file(name, path, None)
+        self.add_reader2(name, read, None::<&str>, None, None);
     }
 
     /// Adds a readable part to the Form as a file.
@@ -184,21 +195,14 @@ impl Form {
     ///
     /// form.add_reader_file("input", bytes, "filename.txt");
     /// ```
-    ///
+    #[inline]
     pub fn add_reader_file<F, G, R>(&mut self, name: F, read: R, filename: G)
     where
         F: Display,
         G: Into<String>,
         R: 'static + Read + Send,
     {
-        let read = Box::new(read);
-
-        self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
-            name,
-            None,
-            Some(filename.into()),
-        ));
+        self.add_reader2(name, read, Some(filename), None, None);
     }
 
     /// Adds a readable part to the Form as a file with a specified mime.
@@ -220,20 +224,35 @@ impl Form {
     /// # }
     /// ```
     ///
+    #[inline]
     pub fn add_reader_file_with_mime<F, G, R>(&mut self, name: F, read: R, filename: G, mime: Mime)
     where
         F: Display,
         G: Into<String>,
         R: 'static + Read + Send,
     {
-        let read = Box::new(read);
+        self.add_reader2(name, read, Some(filename), Some(mime), None);
+    }
 
-        self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
-            name,
-            Some(mime),
-            Some(filename.into()),
-        ));
+    /// Adds a file, and attempts to derive the mime type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use multipart_rfc7578::Form;
+    ///
+    /// let mut form = Form::default();
+    ///
+    /// form.add_file("file", file!()).expect("file to exist");
+    /// ```
+    ///
+    #[inline]
+    pub fn add_file<P, F>(&mut self, name: F, path: P) -> io::Result<()>
+    where
+        P: AsRef<Path>,
+        F: Display,
+    {
+        self._add_file(name, path, None)
     }
 
     /// Adds a file with the specified mime type to the form.
