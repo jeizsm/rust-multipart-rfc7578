@@ -309,6 +309,10 @@ impl MultipartForm {
         Ok(())
     }
 
+    pub fn boundary(&self) -> &str {
+        &self.boundary
+    }
+
     fn boundary_string(&self) -> String {
         format!("{}--{}{}", CRLF, self.boundary, CRLF)
     }
