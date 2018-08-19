@@ -291,10 +291,14 @@ impl Form {
         F: Display,
     {
         let f = File::open(&path)?;
-        let mime = if let Some(ext) = path.as_ref().extension() {
-            Mime::from_str(ext.to_string_lossy().borrow()).ok()
-        } else {
-            mime
+        let mime = match mime {
+            Some(mime) => Some(mime),
+            None => {
+                match path.as_ref().extension() {
+                    Some(ext) => Mime::from_str(ext.to_string_lossy().borrow()).ok(),
+                    None => None
+                }
+            }
         };
         let len = match f.metadata() {
             // If the path is not a file, it can't be uploaded because there
