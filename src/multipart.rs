@@ -45,7 +45,7 @@ use hyper;
 ///
 /// [See](https://tools.ietf.org/html/rfc7578#section-1).
 ///
-pub struct MultipartForm {
+pub struct Form {
     parts: Vec<Part>,
 
     /// The auto-generated boundary as described by 4.1.
@@ -55,22 +55,22 @@ pub struct MultipartForm {
     boundary: String,
 }
 
-impl Default for MultipartForm {
+impl Default for Form {
     /// Creates a new form with the default boundary generator.
     ///
     #[inline]
-    fn default() -> MultipartForm {
-        MultipartForm::new::<RandomAsciiGenerator>()
+    fn default() -> Form {
+        Form::new::<RandomAsciiGenerator>()
     }
 }
 
-impl MultipartForm {
+impl Form {
     /// Creates a new form with the specified boundary generator function.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use multipart_rfc7578::MultipartForm;
+    /// # use multipart_rfc7578::Form;
     /// # use multipart_rfc7578::BoundaryGenerator;
     /// #
     /// struct TestGenerator;
@@ -81,7 +81,7 @@ impl MultipartForm {
     ///     }
     /// }
     ///
-    /// let form = MultipartForm::new::<TestGenerator>();
+    /// let form = Form::new::<TestGenerator>();
     /// ```
     ///
     #[inline]
@@ -100,9 +100,9 @@ impl MultipartForm {
     /// # Examples
     ///
     /// ```
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     ///
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_text("text", "Hello World!");
     /// form.add_text("more", String::from("Hello Universe!"));
@@ -126,11 +126,11 @@ impl MultipartForm {
     /// # Examples
     ///
     /// ```
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     /// use std::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_reader("input", bytes);
     /// ```
@@ -155,9 +155,9 @@ impl MultipartForm {
     /// # Examples
     ///
     /// ```
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     ///
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_file("file", file!()).expect("file to exist");
     /// ```
@@ -176,11 +176,11 @@ impl MultipartForm {
     /// # Examples
     ///
     /// ```
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     /// use std::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_reader_file("input", bytes, "filename.txt");
     /// ```
@@ -209,12 +209,12 @@ impl MultipartForm {
     /// # extern crate mime;
     /// # extern crate multipart_rfc7578;
     /// #
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     /// use std::io::Cursor;
     ///
     /// # fn main() {
     /// let bytes = Cursor::new("Hello World!");
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_reader_file_with_mime("input", bytes, "filename.txt", mime::TEXT_PLAIN);
     /// # }
@@ -246,10 +246,10 @@ impl MultipartForm {
     /// # extern crate mime;
     /// # extern crate multipart_rfc7578;
     /// #
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     ///
     /// # fn main() {
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_file_with_mime("data", "test.csv", mime::TEXT_CSV);
     /// # }
@@ -341,12 +341,12 @@ impl MultipartForm {
     /// # extern crate multipart_rfc7578;
     /// #
     /// use hyper::{Method, Request, Uri};
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     ///
     /// # fn main() {
     /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
     /// let mut req_builder = Request::post(url);
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_text("text", "Hello World!");
     /// let req = form.set_hyper_body(&mut req_builder).unwrap();
@@ -370,12 +370,12 @@ impl MultipartForm {
     /// # extern crate multipart_rfc7578;
     /// #
     /// use actix_web::client;
-    /// use multipart_rfc7578::MultipartForm;
+    /// use multipart_rfc7578::Form;
     ///
     /// # fn main() {
     /// let url = "http://localhost:80/upload";
     /// let mut req_builder = client::post(url);
-    /// let mut form = MultipartForm::default();
+    /// let mut form = Form::default();
     ///
     /// form.add_text("text", "Hello World!");
     /// let req = form.set_actix_body(&mut req_builder).unwrap();
@@ -393,11 +393,11 @@ impl MultipartForm {
 
 #[cfg(test)]
 mod tests {
-    use super::MultipartForm;
+    use super::Form;
     use std::io::{Cursor, Read};
     #[test]
     fn test_text_form() {
-        let mut form = MultipartForm::default();
+        let mut form = Form::default();
         form.add_text("hello", "world");
         form.add_text("foo", "bar");
         let test_string = format!(
@@ -421,7 +421,7 @@ bar\r
 
     #[test]
     fn test_form_reader() {
-        let mut form = MultipartForm::default();
+        let mut form = Form::default();
         form.add_reader("hello", Cursor::new("world"));
         form.add_text("foo", "bar");
         let test_string = format!(

@@ -15,7 +15,7 @@ use std::iter::FromIterator;
 ///
 /// The default generator will build a random string of 6 ascii characters.
 /// If you need more complexity, you can implement this, and use it with
-/// [`Form::new`](/multipart_rfc7578/multipart/struct.MultipartForm.html#method.new).
+/// [`Form::new`](/multipart_rfc7578/multipart/struct.Form.html#method.new).
 ///
 /// # Examples
 ///

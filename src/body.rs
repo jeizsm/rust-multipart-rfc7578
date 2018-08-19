@@ -12,7 +12,7 @@ use bytes::{BufMut, Bytes, BytesMut, IntoBuf};
 use futures::{stream::Stream, Async, Poll};
 #[cfg(feature = "hyper")]
 use hyper::body::Payload;
-use multipart::MultipartForm;
+use multipart::Form;
 #[allow(unused_imports)]
 use std::io::{self, Cursor, Read};
 
@@ -69,11 +69,11 @@ impl Payload for Body {
     }
 }
 
-impl From<MultipartForm> for Body {
+impl From<Form> for Body {
     /// Turns a `Form` into a multipart `Body`.
     ///
     #[inline]
-    fn from(form: MultipartForm) -> Self {
+    fn from(form: Form) -> Self {
         Body {
             buf_size: 2048,
             reader: Box::new(form.into_reader()),

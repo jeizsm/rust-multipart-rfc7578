@@ -14,22 +14,16 @@
 //!
 //! ```toml
 //! [dependencies]
-//! multipart-rfc7578 = "0.3.0"
-//! ```
-//!
-//! Because the name of this library is really wordy, I recommend shortening it:
-//!
-//! ```rust
-//! extern crate multipart_rfc7578 as multipart;
+//! multipart-rfc7578 = "0.4.0"
 //! ```
 //!
 //! ```rust
 //! # extern crate multipart_rfc7578;
 //!
-//! use multipart_rfc7578::MultipartForm;
+//! use multipart_rfc7578::Form;
 //!
 //! # fn main() {
-//! let mut form = MultipartForm::default();
+//! let mut form = Form::default();
 //!
 //! form.add_text("test", "Hello World");
 //! # }
@@ -57,7 +51,7 @@ mod part;
 mod body;
 
 pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
-pub use multipart::MultipartForm;
+pub use multipart::Form;
 pub use body::Body;
 
 pub(crate) const CRLF: &str = "\r\n";
