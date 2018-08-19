@@ -16,7 +16,7 @@ use multipart::MultipartForm;
 #[allow(unused_imports)]
 use std::io::{self, Cursor, Read};
 
-/// Multipart body that is compatible with Hyper.
+/// Multipart body that is compatible with Hyper and Actix-web.
 ///
 pub struct Body {
     /// The amount of data to write with each chunk.

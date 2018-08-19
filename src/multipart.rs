@@ -309,12 +309,13 @@ impl MultipartForm {
         Ok(())
     }
 
-    pub fn boundary(&self) -> &str {
-        &self.boundary
+    // get boundary as header string
+    pub fn boundary_header(&self) -> String {
+        format!("multipart/form-data; boundary=\"{}\"", &self.boundary)
     }
 
     fn boundary_string(&self) -> String {
-        format!("{}--{}{}", CRLF, self.boundary, CRLF)
+        format!("--{}{}", self.boundary, CRLF)
     }
 
     fn final_boundary_string(&self) -> String {
@@ -353,11 +354,7 @@ impl MultipartForm {
     /// ```
     ///
     pub fn set_hyper_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
-        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
-
-        let header: &str = header.as_ref();
-
-        req.header(CONTENT_TYPE, header);
+        req.header(CONTENT_TYPE, self.boundary_header());
 
         req.body(hyper::Body::wrap_stream(Body::from(self)))
     }
@@ -389,8 +386,7 @@ impl MultipartForm {
         self,
         req: &mut ClientRequestBuilder,
     ) -> Result<ClientRequest, actix_web::Error> {
-        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
-        req.header(CONTENT_TYPE, header);
+        req.header(CONTENT_TYPE, self.boundary_header());
         req.streaming(Body::from(self))
     }
 }
@@ -405,8 +401,7 @@ mod tests {
         form.add_text("hello", "world");
         form.add_text("foo", "bar");
         let test_string = format!(
-            "\r
---{}\r
+            "--{}\r
 content-disposition: form-data; name=\"hello\"\r
 content-type: text/plain\r
 \r
@@ -430,8 +425,7 @@ bar\r
         form.add_reader("hello", Cursor::new("world"));
         form.add_text("foo", "bar");
         let test_string = format!(
-            "\r
---{}\r
+            "--{}\r
 content-disposition: form-data; name=\"hello\"\r
 content-type: application/octet-stream\r
 \r

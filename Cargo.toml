@@ -6,9 +6,12 @@ documentation     = "https://docs.rs/multipart-rfc7578"
 repository        = "https://github.com/jeizsm/rust-multipart-rfc7578"
 keywords          = ["hyper", "actix-web", "multipart", "form", "http"]
 categories        = ["asynchronous", "web-programming"]
-version           = "0.3.2"
+version           = "0.4.0"
 readme            = "README.md"
 license           = "MIT OR Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
 mime = "0.3"
@@ -22,5 +25,3 @@ actix-web = { version = "0.7", optional = true }
 [features]
 
 default = ["bytes", "futures"]
-with-hyper = ["hyper", "bytes", "futures"]
-with-actix-web = ["actix-web", "bytes", "futures"]

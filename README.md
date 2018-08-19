@@ -6,7 +6,7 @@
 
 This crate contains an implementation of the multipart/form-data media
 type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for
-hyper.
+hyper and actix-web.
 
 Currently, only the client-side is implemented.
 
@@ -14,38 +14,17 @@ Currently, only the client-side is implemented.
 
 ```toml
 [dependencies]
-multipart-rfc7578 = "0.3"
+multipart-rfc7578 = "0.4"
 ```
 
-Because the name of this library is really wordy, I recommend shortening it:
+[use with hyper](https://docs.rs/multipart-rfc7578/0.4.0/multipart_rfc7578/multipart/struct.MultipartForm.html#method.set_hyper_body)
 
-Using this requires a hyper client compatible with the `multipart::Body`
-data structure (see the documentation for more detailed examples):
-
-```rust
-
-use hyper::{Client, Request, rt::{self, Future}};
-use multipart_rfc7578::MultipartForm;
-
-let client = Client::new();
-let mut req_builder = Request::get("http://localhost/upload");
-let mut form = MultipartForm::default();
-
-form.add_text("test", "Hello World");
-let req = form.set_body(&mut req_builder).unwrap();
-
-rt::run(
-    client
-        .request(req)
-        .map(|_| println!("done..."))
-        .map_err(|_| println!("an error occurred")),
-);
-```
+[use with actix](https://docs.rs/multipart-rfc7578/0.4.0/multipart_rfc7578/multipart/struct.MultipartForm.html#method.set_actix_body)
 
 
 ## Note on Server Implementation
 
-I don't have any plans on implementing the server-side of this any time soon. I ended up implementing the client-side because I couldn't find any good libraries that were compatible with hyper >= 0.11.
+I don't have any plans on implementing the server-side for hyper of this any time soon. I ended up implementing the client-side because I couldn't find any good libraries that were compatible with hyper >= 0.11 and actix-web.
 
 Please feel free to submit a pull request, I would gladly review it!
 

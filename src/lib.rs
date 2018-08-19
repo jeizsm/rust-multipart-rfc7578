@@ -58,5 +58,6 @@ mod body;
 
 pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
 pub use multipart::MultipartForm;
+pub use body::Body;
 
 pub(crate) const CRLF: &str = "\r\n";
