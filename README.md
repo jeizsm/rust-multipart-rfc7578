@@ -14,17 +14,17 @@ Currently, only the client-side is implemented.
 
 ```toml
 [dependencies]
-multipart-rfc7578 = "0.4"
+multipart-rfc7578 = "0.5"
 ```
 
-[use with hyper](https://docs.rs/multipart-rfc7578/0.4/multipart_rfc7578/multipart/struct.Form.html#method.set_hyper_body)
+[use with hyper](https://docs.rs/multipart-rfc7578/0.5/multipart_rfc7578/multipart/struct.Form.html#method.set_hyper_body)
 
-[use with actix](https://docs.rs/multipart-rfc7578/0.4/multipart_rfc7578/multipart/struct.Form.html#method.set_actix_body)
+[use with actix](https://docs.rs/multipart-rfc7578/0.5/multipart_rfc7578/multipart/struct.Form.html#method.set_actix_body)
 
 
 ## Note on Server Implementation
 
-I don't have any plans on implementing the server-side for hyper of this any time soon. I ended up implementing the client-side because I couldn't find any good libraries that were compatible with hyper >= 0.11 and actix-web.
+I don't have any plans on implementing the server-side for hyper of this any time soon.
 
 Please feel free to submit a pull request, I would gladly review it!
 

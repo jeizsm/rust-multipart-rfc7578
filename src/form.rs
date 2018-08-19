@@ -346,6 +346,7 @@ impl Form {
         format!("--{}--{}", self.boundary, CRLF)
     }
 
+    #[doc(hidden)]
     pub fn into_reader(self) -> impl Read {
         let boundary = Cursor::new(self.boundary_string());
         let final_boundary = Cursor::new(self.final_boundary_string());
