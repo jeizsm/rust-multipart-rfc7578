@@ -42,16 +42,16 @@ extern crate futures;
 #[cfg(feature = "hyper")]
 extern crate hyper;
 
-pub mod boundary_generator;
-mod chain;
-pub mod multipart;
+mod boundary_generator;
+mod form;
+mod form_reader;
 mod part;
 
 #[cfg(feature = "futures")]
-mod body;
+pub mod body;
 
-pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
-pub use multipart::Form;
 pub use body::Body;
+pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
+pub use form::Form;
 
 pub(crate) const CRLF: &str = "\r\n";

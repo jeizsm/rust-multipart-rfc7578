@@ -8,7 +8,7 @@
 //
 
 use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
-use chain::ReadersChain;
+use form_reader::FormReader;
 use mime::Mime;
 use part::{Inner, Part};
 use std::borrow::Borrow;
@@ -325,9 +325,12 @@ impl Form {
     pub fn into_reader(self) -> impl Read {
         let boundary = Cursor::new(self.boundary_string());
         let final_boundary = Cursor::new(self.final_boundary_string());
-        let readers = self.parts.into_iter().map(|part| part.into_reader());
-        let chain = ReadersChain::new(readers);
-        boundary.chain(chain).chain(final_boundary)
+        let readers = self
+            .parts
+            .into_iter()
+            .map(|part| part.into_reader())
+            .peekable();
+        FormReader::new(boundary, readers, final_boundary)
     }
 
     #[cfg(feature = "hyper")]
@@ -406,15 +409,16 @@ content-disposition: form-data; name=\"hello\"\r
 content-type: text/plain\r
 \r
 world\r
+--{}\r
 content-disposition: form-data; name=\"foo\"\r
 content-type: text/plain\r
 \r
 bar\r
 --{}--\r
 ",
-            form.boundary, form.boundary
+            form.boundary, form.boundary, form.boundary
         );
-        let mut form_string = String::new();
+        let mut form_string = String::with_capacity(test_string.len() + 1);
         form.into_reader().read_to_string(&mut form_string).unwrap();
         assert_eq!(test_string, form_string);
     }
@@ -430,16 +434,17 @@ content-disposition: form-data; name=\"hello\"\r
 content-type: application/octet-stream\r
 \r
 world\r
+--{}\r
 content-disposition: form-data; name=\"foo\"\r
 content-type: text/plain\r
 \r
 bar\r
 --{}--\r
 ",
-            form.boundary, form.boundary
+            form.boundary, form.boundary, form.boundary
         );
         let test_string = test_string.to_string();
-        let mut form_string = String::new();
+        let mut form_string = String::with_capacity(test_string.len() + 1);
         form.into_reader().read_to_string(&mut form_string).unwrap();
         assert_eq!(test_string, form_string);
     }

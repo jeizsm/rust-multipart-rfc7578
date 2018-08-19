@@ -9,10 +9,10 @@
 
 #[allow(unused_imports)]
 use bytes::{BufMut, Bytes, BytesMut, IntoBuf};
+use form::Form;
 use futures::{stream::Stream, Async, Poll};
 #[cfg(feature = "hyper")]
 use hyper::body::Payload;
-use multipart::Form;
 #[allow(unused_imports)]
 use std::io::{self, Cursor, Read};
 
