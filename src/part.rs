@@ -7,8 +7,8 @@
 // copied, modified, or distributed except according to those terms.
 //
 #![cfg_attr(feature = "cargo-clippy", allow(borrow_interior_mutable_const))]
-
-use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
+#[allow(unused_imports)]
+use http::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
 use mime::{self, Mime};
 use std::{
     fmt::Display,
@@ -77,13 +77,21 @@ impl Part {
 
     #[inline]
     fn headers_string(&self) -> String {
+        #[cfg(feature = "part-content-length")]
+        let content_length = match self.inner.len() {
+            Some(len) => format!("{}{}: {}", CRLF, CONTENT_LENGTH.as_str(), len),
+            None => String::new(),
+        };
+        #[cfg(not(feature = "part-content-length"))]
+        let content_length = "";
         format!(
-            "{}: {}{}{}: {}{}{}",
+            "{}: {}{}{}: {}{}{}{}",
             CONTENT_DISPOSITION.as_str(),
             self.content_disposition,
             CRLF,
             CONTENT_TYPE.as_str(),
             self.content_type,
+            content_length,
             CRLF,
             CRLF
         )
@@ -100,19 +108,32 @@ impl Part {
 
     #[inline]
     fn content_disposition_len(&self) -> u64 {
-        (CONTENT_DISPOSITION.as_str().len() + 2 + self.content_disposition.len()) as u64
+        (CONTENT_DISPOSITION.as_str().len() + 2 + self.content_disposition.len() + 2) as u64
     }
 
     #[inline]
     fn content_type_len(&self) -> u64 {
-        (CONTENT_TYPE.as_str().len() + 2 + self.content_type.len()) as u64
+        (CONTENT_TYPE.as_str().len() + 2 + self.content_type.len() + 2) as u64
+    }
+
+    #[inline]
+    fn content_length_len(&self) -> u64 {
+        #[cfg(feature = "part-content-length")]
+        return (CONTENT_LENGTH.as_str().len() + 2 + self.inner.len().unwrap().to_string().len() + 2)
+            as u64;
+        #[cfg(not(feature = "part-content-length"))]
+        0
     }
 
     #[inline]
     pub(crate) fn content_length(&self) -> Option<u64> {
-        self.inner
-            .len()
-            .map(|len| len + self.content_disposition_len() + 2 + self.content_type_len() + 4)
+        self.inner.len().map(|len| {
+            len
+                + self.content_disposition_len()
+                + self.content_length_len()
+                + self.content_type_len()
+                + 2
+        })
     }
 }
 
