@@ -191,6 +191,7 @@ mod tests {
         let inner = Inner::Text(inner_content.to_string());
         let test_string = "content-disposition: form-data; name=\"hello\"\r
 content-type: text/plain\r
+content-length: 5\r
 \r
 world\r
 ";
@@ -211,6 +212,7 @@ world\r
         );
         let test_string = "content-disposition: form-data; name=\"hello\"\r
 content-type: application/octet-stream\r
+content-length: 5\r
 \r
 world\r
 ";

@@ -450,11 +450,13 @@ mod tests {
             "--{}\r
 content-disposition: form-data; name=\"hello\"\r
 content-type: text/plain\r
+content-length: 5\r
 \r
 world\r
 --{}\r
 content-disposition: form-data; name=\"foo\"\r
 content-type: text/plain\r
+content-length: 3\r
 \r
 bar\r
 --{}--\r
@@ -480,6 +482,7 @@ world\r
 --{}\r
 content-disposition: form-data; name=\"foo\"\r
 content-type: text/plain\r
+content-length: 3\r
 \r
 bar\r
 --{}--\r
