@@ -189,9 +189,16 @@ mod tests {
         let name = "hello";
         let inner_content = "world";
         let inner = Inner::Text(inner_content.to_string());
+        #[cfg(feature = "part-content-length")]
         let test_string = "content-disposition: form-data; name=\"hello\"\r
 content-type: text/plain\r
 content-length: 5\r
+\r
+world\r
+";
+        #[cfg(not(feature = "part-content-length"))]
+        let test_string = "content-disposition: form-data; name=\"hello\"\r
+content-type: text/plain\r
 \r
 world\r
 ";
@@ -210,9 +217,16 @@ world\r
             Box::new(Cursor::new(inner_content.as_bytes())),
             Some(inner_content.len() as u64),
         );
+        #[cfg(feature = "part-content-length")]
         let test_string = "content-disposition: form-data; name=\"hello\"\r
 content-type: application/octet-stream\r
 content-length: 5\r
+\r
+world\r
+";
+        #[cfg(not(feature = "part-content-length"))]
+        let test_string = "content-disposition: form-data; name=\"hello\"\r
+content-type: application/octet-stream\r
 \r
 world\r
 ";

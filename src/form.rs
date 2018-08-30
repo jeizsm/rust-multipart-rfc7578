@@ -64,6 +64,96 @@ impl Default for Form {
     }
 }
 
+/// SetBody for client
+pub trait SetBody {
+    type RequestBuilder;
+    type Result;
+
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// # Actix-web example
+    ///
+    /// ```
+    /// # #[cfg(feature = "actix-web")]
+    /// # extern crate actix_web;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// # #[cfg(feature = "actix-web")]
+    /// use actix_web::client;
+    /// use multipart_rfc7578::{Form, SetBody};
+    ///
+    /// # #[cfg(feature = "actix-web")]
+    /// # fn main() {
+    /// let url = "http://localhost:80/upload";
+    /// let mut req_builder = client::post(url);
+    /// let mut form = Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// # }
+    /// # #[cfg(not(feature = "actix-web"))]
+    /// # fn main() {
+    /// # }
+    /// ```
+    ///
+    /// # Hyper example
+    ///
+    /// ```
+    /// # #[cfg(feature = "hyper")]
+    /// # extern crate hyper;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// # #[cfg(feature = "hyper")]
+    /// use hyper::{Method, Request, Uri};
+    /// use multipart_rfc7578::{Form, SetBody};
+    ///
+    /// # #[cfg(feature = "hyper")]
+    /// # fn main() {
+    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
+    /// let mut req_builder = Request::post(url);
+    /// let mut form = Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// # }
+    /// # #[cfg(not(feature = "hyper"))]
+    /// # fn main() {
+    /// # }
+    /// ```
+    ///
+
+    fn set_body(self, req: &mut Self::RequestBuilder) -> Self::Result;
+}
+
+#[cfg(feature = "actix-web")]
+impl SetBody for Form {
+    type RequestBuilder = ClientRequestBuilder;
+    type Result = Result<ClientRequest, actix_web::Error>;
+
+    fn set_body(self, req: &mut Self::RequestBuilder) -> Self::Result {
+        req.header(CONTENT_TYPE, self.content_type());
+        if let Some(len) = self.content_length() {
+            req.header(CONTENT_LENGTH, len.to_string());
+        }
+        req.streaming(Body::from(self))
+    }
+}
+
+#[cfg(feature = "hyper")]
+impl SetBody for Form {
+    type RequestBuilder = Builder;
+    type Result = Result<Request<hyper::Body>, http::Error>;
+
+    fn set_body(self, req: &mut Self::RequestBuilder) -> Self::Result {
+        req.header(CONTENT_TYPE, self.content_type());
+        if let Some(len) = self.content_length() {
+            req.header(CONTENT_LENGTH, len.to_string());
+        }
+        req.body(hyper::Body::wrap_stream(Body::from(self)))
+    }
+}
+
 impl Form {
     /// Creates a new form with the specified boundary generator function.
     ///
@@ -370,71 +460,6 @@ impl Form {
             part.content_length().map(|len| sum + len + boundary_len)
         })
     }
-
-    #[cfg(feature = "hyper")]
-    /// Updates a request instance with the multipart Content-Type header
-    /// and the payload data.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate hyper;
-    /// # extern crate multipart_rfc7578;
-    /// #
-    /// use hyper::{Method, Request, Uri};
-    /// use multipart_rfc7578::Form;
-    ///
-    /// # fn main() {
-    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
-    /// let mut req_builder = Request::post(url);
-    /// let mut form = Form::default();
-    ///
-    /// form.add_text("text", "Hello World!");
-    /// let req = form.set_hyper_body(&mut req_builder).unwrap();
-    /// # }
-    /// ```
-    ///
-    pub fn set_hyper_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
-        req.header(CONTENT_TYPE, self.content_type());
-        if let Some(len) = self.content_length() {
-            req.header(CONTENT_LENGTH, len.to_string());
-        }
-        req.body(hyper::Body::wrap_stream(Body::from(self)))
-    }
-
-    #[cfg(feature = "actix-web")]
-    /// Updates a request instance with the multipart Content-Type header
-    /// and the payload data.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate actix_web;
-    /// # extern crate multipart_rfc7578;
-    /// #
-    /// use actix_web::client;
-    /// use multipart_rfc7578::Form;
-    ///
-    /// # fn main() {
-    /// let url = "http://localhost:80/upload";
-    /// let mut req_builder = client::post(url);
-    /// let mut form = Form::default();
-    ///
-    /// form.add_text("text", "Hello World!");
-    /// let req = form.set_actix_body(&mut req_builder).unwrap();
-    /// # }
-    /// ```
-    ///
-    pub fn set_actix_body(
-        self,
-        req: &mut ClientRequestBuilder,
-    ) -> Result<ClientRequest, actix_web::Error> {
-        req.header(CONTENT_TYPE, self.content_type());
-        if let Some(len) = self.content_length() {
-            req.header(CONTENT_LENGTH, len.to_string());
-        }
-        req.streaming(Body::from(self))
-    }
 }
 
 #[cfg(test)]
@@ -446,22 +471,28 @@ mod tests {
         let mut form = Form::default();
         form.add_text("hello", "world");
         form.add_text("foo", "bar");
+        #[cfg(feature = "part-content-length")]
+        let content_length = "content-length: 5\r\n";
+        #[cfg(not(feature = "part-content-length"))]
+        let content_length = "";
+        #[cfg(feature = "part-content-length")]
+        let content_length1 = "content-length: 3\r\n";
+        #[cfg(not(feature = "part-content-length"))]
+        let content_length1 = "";
         let test_string = format!(
             "--{}\r
 content-disposition: form-data; name=\"hello\"\r
 content-type: text/plain\r
-content-length: 5\r
-\r
+{}\r
 world\r
 --{}\r
 content-disposition: form-data; name=\"foo\"\r
 content-type: text/plain\r
-content-length: 3\r
-\r
+{}\r
 bar\r
 --{}--\r
 ",
-            form.boundary, form.boundary, form.boundary
+            form.boundary, content_length, form.boundary, content_length1, form.boundary
         );
         let mut form_string = String::with_capacity(test_string.len() + 1);
         form.into_reader().read_to_string(&mut form_string).unwrap();
@@ -473,6 +504,10 @@ bar\r
         let mut form = Form::default();
         form.add_reader("hello", Cursor::new("world"));
         form.add_text("foo", "bar");
+        #[cfg(feature = "part-content-length")]
+        let content_length = "content-length: 3\r\n";
+        #[cfg(not(feature = "part-content-length"))]
+        let content_length = "";
         let test_string = format!(
             "--{}\r
 content-disposition: form-data; name=\"hello\"\r
@@ -482,12 +517,11 @@ world\r
 --{}\r
 content-disposition: form-data; name=\"foo\"\r
 content-type: text/plain\r
-content-length: 3\r
-\r
+{}\r
 bar\r
 --{}--\r
 ",
-            form.boundary, form.boundary, form.boundary
+            form.boundary, form.boundary, content_length, form.boundary
         );
         let test_string = test_string.to_string();
         let mut form_string = String::with_capacity(test_string.len() + 1);

@@ -14,7 +14,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! multipart-rfc7578 = "0.5.0"
+//! multipart-rfc7578 = "0.6"
 //! ```
 //!
 //! ```rust
@@ -52,6 +52,6 @@ mod body;
 
 pub use body::Body;
 pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
-pub use form::Form;
+pub use form::{Form, SetBody};
 
 pub(crate) const CRLF: &str = "\r\n";
