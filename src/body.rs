@@ -7,28 +7,26 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-#[allow(unused_imports)]
-use bytes::{BufMut, Bytes, BytesMut, IntoBuf};
-use form::Form;
+use crate::form::Form;
+use bytes::{BufMut, Bytes, BytesMut};
 use futures::{stream::Stream, Async, Poll};
 #[cfg(feature = "hyper")]
 use hyper::body::Payload;
-#[allow(unused_imports)]
-use std::io::{self, Cursor, Read};
+use std::io::{self, Read};
 
 /// Multipart body that is compatible with Hyper and Actix-web.
 ///
-pub struct Body {
+pub struct Body<'a> {
     /// The amount of data to write with each chunk.
     ///
     buf_size: usize,
 
     /// The reader.
     ///
-    reader: Box<'static + Read + Send>,
+    reader: Box<'a + Read + Send>,
 }
 
-impl Stream for Body {
+impl<'a> Stream for Body<'a> {
     type Item = Bytes;
 
     type Error = io::Error;
@@ -52,8 +50,8 @@ impl Stream for Body {
 }
 
 #[cfg(feature = "hyper")]
-impl Payload for Body {
-    type Data = Cursor<Bytes>;
+impl Payload for Body<'static> {
+    type Data = std::io::Cursor<Bytes>;
 
     type Error = io::Error;
 
@@ -62,19 +60,19 @@ impl Payload for Body {
     #[inline]
     fn poll_data(&mut self) -> Poll<Option<Self::Data>, Self::Error> {
         match self.poll() {
-            Ok(Async::Ready(read)) => Ok(Async::Ready(read.map(IntoBuf::into_buf))),
+            Ok(Async::Ready(read)) => Ok(Async::Ready(read.map(bytes::IntoBuf::into_buf))),
             Ok(Async::NotReady) => Ok(Async::NotReady),
             Err(e) => Err(e),
         }
     }
 }
 
-impl From<Form> for Body {
+impl<'a> From<Form<'a>> for Body<'a> {
     /// Turns a `Form` into a multipart `Body`.
     ///
     #[inline]
-    fn from(form: Form) -> Self {
-        Body {
+    fn from(form: Form<'a>) -> Self {
+        Self {
             buf_size: 2048,
             reader: Box::new(form.into_reader()),
         }

@@ -6,22 +6,21 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 //
-#![cfg_attr(feature = "cargo-clippy", allow(borrow_interior_mutable_const))]
-#[allow(unused_imports)]
-use http::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
+#![allow(clippy::borrow_interior_mutable_const)]
+use crate::CRLF;
+use http::header;
 use mime::{self, Mime};
 use std::{
     fmt::Display,
     io::{Cursor, Read},
 };
-use CRLF;
 
 /// One part of a body delimited by a boundary line.
 ///
 /// [See RFC2046 5.1](https://tools.ietf.org/html/rfc2046#section-5.1).
 ///
-pub(crate) struct Part {
-    inner: Inner,
+pub(crate) struct Part<'a> {
+    inner: Inner<'a>,
 
     /// Each part can include a content-type header field. If this
     /// is not specified, it defaults to "text/plain", or
@@ -38,7 +37,7 @@ pub(crate) struct Part {
     content_disposition: String,
 }
 
-impl Part {
+impl<'a> Part<'a> {
     /// Internal method to build a new Part instance. Sets the disposition type,
     /// content-type, and the disposition parameters for name, and optionally
     /// for filename.
@@ -47,7 +46,12 @@ impl Part {
     /// files need to be specified for one form field, they can all be specified
     /// with the same name parameter.
     ///
-    pub(crate) fn new<N, F>(inner: Inner, name: N, mime: Option<Mime>, filename: Option<F>) -> Part
+    pub(crate) fn new<N, F>(
+        inner: Inner<'a>,
+        name: N,
+        mime: Option<Mime>,
+        filename: Option<F>,
+    ) -> Part
     where
         N: Display,
         F: Display,
@@ -79,17 +83,17 @@ impl Part {
     fn headers_string(&self) -> String {
         #[cfg(feature = "part-content-length")]
         let content_length = match self.inner.len() {
-            Some(len) => format!("{}{}: {}", CRLF, CONTENT_LENGTH.as_str(), len),
+            Some(len) => format!("{}{}: {}", CRLF, header::CONTENT_LENGTH.as_str(), len),
             None => String::new(),
         };
         #[cfg(not(feature = "part-content-length"))]
         let content_length = "";
         format!(
             "{}: {}{}{}: {}{}{}{}",
-            CONTENT_DISPOSITION.as_str(),
+            header::CONTENT_DISPOSITION.as_str(),
             self.content_disposition,
             CRLF,
-            CONTENT_TYPE.as_str(),
+            header::CONTENT_TYPE.as_str(),
             self.content_type,
             content_length,
             CRLF,
@@ -97,7 +101,7 @@ impl Part {
         )
     }
 
-    pub(crate) fn into_reader(self) -> impl Read {
+    pub(crate) fn into_reader(self) -> impl Read + 'a {
         let cursor = Cursor::new(self.headers_string());
         let inner = match self.inner {
             Inner::Text(string) => Box::new(Cursor::new(string.into_bytes())),
@@ -108,19 +112,21 @@ impl Part {
 
     #[inline]
     fn content_disposition_len(&self) -> u64 {
-        (CONTENT_DISPOSITION.as_str().len() + 2 + self.content_disposition.len() + 2) as u64
+        (header::CONTENT_DISPOSITION.as_str().len() + 2 + self.content_disposition.len() + 2) as u64
     }
 
     #[inline]
     fn content_type_len(&self) -> u64 {
-        (CONTENT_TYPE.as_str().len() + 2 + self.content_type.len() + 2) as u64
+        (header::CONTENT_TYPE.as_str().len() + 2 + self.content_type.len() + 2) as u64
     }
 
     #[inline]
     fn content_length_len(&self) -> u64 {
         #[cfg(feature = "part-content-length")]
-        return (CONTENT_LENGTH.as_str().len() + 2 + self.inner.len().unwrap().to_string().len() + 2)
-            as u64;
+        return (header::CONTENT_LENGTH.as_str().len()
+            + 2
+            + self.inner.len().unwrap().to_string().len()
+            + 2) as u64;
         #[cfg(not(feature = "part-content-length"))]
         0
     }
@@ -128,8 +134,7 @@ impl Part {
     #[inline]
     pub(crate) fn content_length(&self) -> Option<u64> {
         self.inner.len().map(|len| {
-            len
-                + self.content_disposition_len()
+            len + self.content_disposition_len()
                 + self.content_length_len()
                 + self.content_type_len()
                 + 2
@@ -137,7 +142,7 @@ impl Part {
     }
 }
 
-pub(crate) enum Inner {
+pub(crate) enum Inner<'a> {
     /// The `Read` variant captures multiple cases.
     ///
     ///   * The first is it supports uploading a file, which is explicitly
@@ -149,14 +154,14 @@ pub(crate) enum Inner {
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
     ///
-    Read(Box<'static + Read + Send>, Option<u64>),
+    Read(Box<'a + Read + Send>, Option<u64>),
 
     /// The `String` variant handles "text/plain" form data payloads.
     ///
     Text(String),
 }
 
-impl Inner {
+impl<'a> Inner<'a> {
     /// Returns the default content-type header value as described in section 4.4.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.4)

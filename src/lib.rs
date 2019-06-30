@@ -29,19 +29,6 @@
 //! # }
 //! ```
 //!
-extern crate http;
-extern crate mime;
-extern crate rand;
-
-#[cfg(feature = "actix-web")]
-extern crate actix_web;
-#[cfg(feature = "bytes")]
-extern crate bytes;
-#[cfg(feature = "futures")]
-extern crate futures;
-#[cfg(feature = "hyper")]
-extern crate hyper;
-
 mod boundary_generator;
 mod form;
 mod form_reader;
@@ -50,8 +37,9 @@ mod part;
 #[cfg(feature = "futures")]
 mod body;
 
-pub use body::Body;
-pub use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
-pub use form::{Form, SetBody};
+#[cfg(feature = "futures")]
+pub use crate::body::Body;
+pub use crate::boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
+pub use crate::form::Form;
 
 pub(crate) const CRLF: &str = "\r\n";

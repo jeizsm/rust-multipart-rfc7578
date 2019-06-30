@@ -7,10 +7,11 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
-use form_reader::FormReader;
+use crate::boundary_generator::{BoundaryGenerator, RandomAsciiGenerator};
+use crate::form_reader::FormReader;
+use crate::part::{Inner, Part};
+use crate::CRLF;
 use mime::Mime;
-use part::{Inner, Part};
 use std::borrow::Borrow;
 use std::{
     fmt::Display,
@@ -19,24 +20,11 @@ use std::{
     path::Path,
     str::FromStr,
 };
-use CRLF;
 
-#[cfg(feature = "actix-web")]
-use actix_web::{
-    self,
-    client::{ClientRequest, ClientRequestBuilder},
-};
-#[cfg(any(feature = "hyper", feature = "actix-web"))]
-use body::Body;
-#[cfg(any(feature = "hyper", feature = "actix-web"))]
-#[allow(unused_imports)]
-use http::{
-    self,
-    header::{CONTENT_LENGTH, CONTENT_TYPE},
-    request::{Builder, Request},
-};
-#[cfg(feature = "hyper")]
-use hyper;
+#[cfg(any(feature = "hyper", feature = "awc"))]
+use crate::body::Body;
+#[cfg(any(feature = "hyper", feature = "awc"))]
+use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
 // use error::Error;
 
@@ -45,8 +33,8 @@ use hyper;
 ///
 /// [See](https://tools.ietf.org/html/rfc7578#section-1).
 ///
-pub struct Form {
-    parts: Vec<Part>,
+pub struct Form<'a> {
+    parts: Vec<Part<'a>>,
 
     /// The auto-generated boundary as described by 4.1.
     ///
@@ -55,106 +43,16 @@ pub struct Form {
     boundary: String,
 }
 
-impl Default for Form {
+impl<'a> Default for Form<'a> {
     /// Creates a new form with the default boundary generator.
     ///
     #[inline]
-    fn default() -> Form {
+    fn default() -> Self {
         Form::new::<RandomAsciiGenerator>()
     }
 }
 
-/// SetBody for client
-pub trait SetBody {
-    type RequestBuilder;
-    type Result;
-
-    /// Updates a request instance with the multipart Content-Type header
-    /// and the payload data.
-    ///
-    /// # Actix-web example
-    ///
-    /// ```
-    /// # #[cfg(feature = "actix-web")]
-    /// # extern crate actix_web;
-    /// # extern crate multipart_rfc7578;
-    /// #
-    /// # #[cfg(feature = "actix-web")]
-    /// use actix_web::client;
-    /// use multipart_rfc7578::{Form, SetBody};
-    ///
-    /// # #[cfg(feature = "actix-web")]
-    /// # fn main() {
-    /// let url = "http://localhost:80/upload";
-    /// let mut req_builder = client::post(url);
-    /// let mut form = Form::default();
-    ///
-    /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body(&mut req_builder).unwrap();
-    /// # }
-    /// # #[cfg(not(feature = "actix-web"))]
-    /// # fn main() {
-    /// # }
-    /// ```
-    ///
-    /// # Hyper example
-    ///
-    /// ```
-    /// # #[cfg(feature = "hyper")]
-    /// # extern crate hyper;
-    /// # extern crate multipart_rfc7578;
-    /// #
-    /// # #[cfg(feature = "hyper")]
-    /// use hyper::{Method, Request, Uri};
-    /// use multipart_rfc7578::{Form, SetBody};
-    ///
-    /// # #[cfg(feature = "hyper")]
-    /// # fn main() {
-    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
-    /// let mut req_builder = Request::post(url);
-    /// let mut form = Form::default();
-    ///
-    /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body(&mut req_builder).unwrap();
-    /// # }
-    /// # #[cfg(not(feature = "hyper"))]
-    /// # fn main() {
-    /// # }
-    /// ```
-    ///
-
-    fn set_body(self, req: &mut Self::RequestBuilder) -> Self::Result;
-}
-
-#[cfg(feature = "actix-web")]
-impl SetBody for Form {
-    type RequestBuilder = ClientRequestBuilder;
-    type Result = Result<ClientRequest, actix_web::Error>;
-
-    fn set_body(self, req: &mut Self::RequestBuilder) -> Self::Result {
-        req.header(CONTENT_TYPE, self.content_type());
-        if let Some(len) = self.content_length() {
-            req.header(CONTENT_LENGTH, len.to_string());
-        }
-        req.streaming(Body::from(self))
-    }
-}
-
-#[cfg(feature = "hyper")]
-impl SetBody for Form {
-    type RequestBuilder = Builder;
-    type Result = Result<Request<hyper::Body>, http::Error>;
-
-    fn set_body(self, req: &mut Self::RequestBuilder) -> Self::Result {
-        req.header(CONTENT_TYPE, self.content_type());
-        if let Some(len) = self.content_length() {
-            req.header(CONTENT_LENGTH, len.to_string());
-        }
-        req.body(hyper::Body::wrap_stream(Body::from(self)))
-    }
-}
-
-impl Form {
+impl<'a> Form<'a> {
     /// Creates a new form with the specified boundary generator function.
     ///
     /// # Examples
@@ -238,7 +136,7 @@ impl Form {
     ) where
         F: Display,
         G: Into<String>,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         let read = Box::new(read);
 
@@ -267,7 +165,7 @@ impl Form {
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         self.add_reader2(name, read, None::<&str>, None, None);
     }
@@ -290,7 +188,7 @@ impl Form {
     where
         F: Display,
         G: Into<String>,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         self.add_reader2(name, read, Some(filename), None, None);
     }
@@ -319,7 +217,7 @@ impl Form {
     where
         F: Display,
         G: Into<String>,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         self.add_reader2(name, read, Some(filename), Some(mime), None);
     }
@@ -437,7 +335,7 @@ impl Form {
     }
 
     #[doc(hidden)]
-    pub fn into_reader(self) -> impl Read {
+    pub fn into_reader(self) -> impl Read + 'a {
         let boundary = Cursor::new(self.boundary_string());
         let final_boundary = Cursor::new(self.final_boundary_string());
         let readers = self
@@ -459,6 +357,93 @@ impl Form {
         self.parts.iter().try_fold(boundary_len, |sum, part| {
             part.content_length().map(|len| sum + len + boundary_len)
         })
+    }
+}
+
+#[cfg(any(feature = "hyper", feature = "awc"))]
+impl Form<'static> {
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// # Actix-web example
+    ///
+    /// ```
+    /// # #[cfg(feature = "awc")]
+    /// # extern crate actix_web;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// # #[cfg(feature = "awc")]
+    /// use actix_web::client;
+    /// use multipart_rfc7578::{Form, SetBody};
+    ///
+    /// # #[cfg(feature = "awc")]
+    /// # fn main() {
+    /// let url = "http://localhost:80/upload";
+    /// let mut req_builder = client::post(url);
+    /// let mut form = Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// # }
+    /// # #[cfg(not(feature = "awc"))]
+    /// # fn main() {
+    /// # }
+    /// ```
+    #[cfg(feature = "awc")]
+    pub fn set_body(
+        self,
+        req: awc::ClientRequest,
+    ) -> impl futures::Future<
+        Item = awc::ClientResponse<
+            impl Stream<Item = bytes::Bytes, Error = awc::error::PayloadError>,
+        >,
+        Error = awc::error::SendRequestError,
+    > {
+        let req = req.set_header(CONTENT_TYPE, self.content_type());
+        let req = match self.content_length() {
+            Some(len) => req.set_header(CONTENT_LENGTH, len.to_string()),
+            _ => req,
+        };
+        req.send_stream(Body::from(self))
+    }
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// # Hyper example
+    ///
+    /// ```
+    /// # #[cfg(feature = "hyper")]
+    /// # extern crate hyper;
+    /// # extern crate multipart_rfc7578;
+    /// #
+    /// # #[cfg(feature = "hyper")]
+    /// use hyper::{Method, Request, Uri};
+    /// use multipart_rfc7578::{Form, SetBody};
+    ///
+    /// # #[cfg(feature = "hyper")]
+    /// # fn main() {
+    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
+    /// let mut req_builder = Request::post(url);
+    /// let mut form = Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// # }
+    /// # #[cfg(not(feature = "hyper"))]
+    /// # fn main() {
+    /// # }
+    /// ```
+    ///
+    #[cfg(feature = "hyper")]
+    pub fn set_body(
+        self,
+        mut req: http::request::Builder,
+    ) -> Result<http::request::Request<hyper::Body>, http::Error> {
+        req.header(CONTENT_TYPE, self.content_type());
+        if let Some(len) = self.content_length() {
+            req.header(CONTENT_LENGTH, len.to_string());
+        }
+        req.body(hyper::Body::wrap_stream(Body::from(self)))
     }
 }
 
