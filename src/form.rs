@@ -361,6 +361,7 @@ impl<'a> Form<'a> {
 }
 
 impl Form<'static> {
+    /// Just for documentation.
     /// Updates a request instance with the multipart Content-Type header
     /// and the payload data.
     ///
@@ -384,25 +385,6 @@ impl Form<'static> {
     /// # fn main() {
     /// # }
     /// ```
-    #[cfg(feature = "awc")]
-    pub fn set_body(
-        self,
-        req: awc::ClientRequest,
-    ) -> impl futures::Future<
-        Item = awc::ClientResponse<
-            impl futures::Stream<Item = bytes::Bytes, Error = awc::error::PayloadError>,
-        >,
-        Error = awc::error::SendRequestError,
-    > {
-        let req = req.set_header(CONTENT_TYPE, self.content_type());
-        let req = match self.content_length() {
-            Some(len) => req.set_header(CONTENT_LENGTH, len.to_string()),
-            _ => req,
-        };
-        req.send_stream(Body::from(self))
-    }
-    /// Updates a request instance with the multipart Content-Type header
-    /// and the payload data.
     ///
     /// # Hyper example
     ///
@@ -424,7 +406,27 @@ impl Form<'static> {
     /// # fn main() {
     /// # }
     /// ```
-    ///
+    #[cfg(all(not(feature = "awc"), not(feature = "hyper")))]
+    pub fn set_body(self) -> ! {
+        unimplemented!()
+    }
+    #[cfg(feature = "awc")]
+    pub fn set_body(
+        self,
+        req: awc::ClientRequest,
+    ) -> impl futures::Future<
+        Item = awc::ClientResponse<
+            impl futures::Stream<Item = bytes::Bytes, Error = awc::error::PayloadError>,
+        >,
+        Error = awc::error::SendRequestError,
+    > {
+        let req = req.set_header(CONTENT_TYPE, self.content_type());
+        let req = match self.content_length() {
+            Some(len) => req.set_header(CONTENT_LENGTH, len.to_string()),
+            _ => req,
+        };
+        req.send_stream(Body::from(self))
+    }
     #[cfg(feature = "hyper")]
     pub fn set_body(
         self,

@@ -14,10 +14,10 @@ Currently, only the client-side is implemented.
 
 ```toml
 [dependencies]
-multipart-rfc7578 = "0.6"
+multipart-rfc7578 = "0.7"
 ```
 
-[use with hyper or actix-web](https://docs.rs/multipart-rfc7578/0.6/multipart_rfc7578/trait.SetBody.html#tymethod.set_body)
+[use with hyper or actix-web](https://docs.rs/multipart-rfc7578/0.7/multipart_rfc7578/struct.Form.html#method.set_body)
 
 ## Note on Server Implementation
 

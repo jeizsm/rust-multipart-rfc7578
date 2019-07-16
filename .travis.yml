@@ -4,5 +4,5 @@ rust:
   - beta
   - nightly
 script:
-  - cargo test --features "actix-web, part-content-length"
+  - cargo test --features "awc, part-content-length"
   - cargo test --features "hyper"

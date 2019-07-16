@@ -14,7 +14,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! multipart-rfc7578 = "0.6"
+//! multipart-rfc7578 = "0.7"
 //! ```
 //!
 //! ```rust
