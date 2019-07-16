@@ -21,5 +21,5 @@ futures = { version = "0.1", optional = true }
 awc = { version = "0.2", optional = true }
 
 [features]
-default = ["bytes", "futures", "part-content-length"]
+default = ["bytes", "futures"]
 part-content-length = []

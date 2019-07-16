@@ -360,30 +360,25 @@ impl<'a> Form<'a> {
     }
 }
 
-#[cfg(any(feature = "hyper", feature = "awc"))]
 impl Form<'static> {
     /// Updates a request instance with the multipart Content-Type header
     /// and the payload data.
     ///
-    /// # Actix-web example
+    /// # awc example
     ///
     /// ```
     /// # #[cfg(feature = "awc")]
-    /// # extern crate actix_web;
-    /// # extern crate multipart_rfc7578;
-    /// #
-    /// # #[cfg(feature = "awc")]
-    /// use actix_web::client;
+    /// use awc::Client;
     /// use multipart_rfc7578::{Form, SetBody};
     ///
     /// # #[cfg(feature = "awc")]
     /// # fn main() {
     /// let url = "http://localhost:80/upload";
-    /// let mut req_builder = client::post(url);
+    /// let req = Client::default().post(url);
     /// let mut form = Form::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// let req = form.set_body(req).unwrap();
     /// # }
     /// # #[cfg(not(feature = "awc"))]
     /// # fn main() {
@@ -395,7 +390,7 @@ impl Form<'static> {
         req: awc::ClientRequest,
     ) -> impl futures::Future<
         Item = awc::ClientResponse<
-            impl Stream<Item = bytes::Bytes, Error = awc::error::PayloadError>,
+            impl futures::Stream<Item = bytes::Bytes, Error = awc::error::PayloadError>,
         >,
         Error = awc::error::SendRequestError,
     > {
@@ -412,10 +407,6 @@ impl Form<'static> {
     /// # Hyper example
     ///
     /// ```
-    /// # #[cfg(feature = "hyper")]
-    /// # extern crate hyper;
-    /// # extern crate multipart_rfc7578;
-    /// #
     /// # #[cfg(feature = "hyper")]
     /// use hyper::{Method, Request, Uri};
     /// use multipart_rfc7578::{Form, SetBody};
